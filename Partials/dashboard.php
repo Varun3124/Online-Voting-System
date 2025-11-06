@@ -1,6 +1,7 @@
 <?php
 
 session_start();
+include('../actions/connect.php');
 if(!isset($_SESSION['id'])){
     header('location:../');
 }
@@ -45,7 +46,11 @@ if($_SESSION['status']==1){
                         ?>
                         <div class="row">
                         <div class="col-md-4">
-                            <img src="../uploads/<?php echo $candidates[$i]['photo'] ?>" alt="Candidate image">
+                            <?php if(!empty($candidates[$i]['photo']) && file_exists("../uploads/".$candidates[$i]['photo'])) { ?>
+                                <img src="../uploads/<?php echo $candidates[$i]['photo'] ?>" alt="Candidate image" class="img-fluid" style="max-width: 150px;">
+                            <?php } else { ?>
+                                <img src="../uploads/default.png" alt="Default image" class="img-fluid" style="max-width: 150px;">
+                            <?php } ?>
                         </div>
                         <div class="col-md-8">
                             <strong class="text-dark h5">Candidate name:</strong>
@@ -61,9 +66,20 @@ if($_SESSION['status']==1){
                     <input type="hidden" name="candidateid" value="<?php echo $candidates[$i]['id'] ?>">
                         
                     <?php 
-                        if($_SESSION['status']==1){
+                        $uid = $_SESSION['id'];
+                        $cid = $candidates[$i]['id'];
+                        $voted = mysqli_query($conn, "SELECT * FROM `votes` WHERE voter_id = '$uid' AND candidate_id = '$cid'");
+                        
+                        if(mysqli_num_rows($voted) > 0){
                             ?>
-                            <button class="bg-success my-3 text-white px-3">Voted</button>
+                            <button class="bg-success my-3 text-white px-3" disabled>Voted</button>
+                            </form>
+                            <!-- Add unvote form -->
+                            <form action="../actions/unvote.php" method="post">
+                                <input type="hidden" name="candidatevotes" value="<?php echo $candidates[$i]['votes'] ?>">
+                                <input type="hidden" name="candidateid" value="<?php echo $candidates[$i]['id'] ?>">
+                                <button class="bg-warning my-1 text-white px-3" type="submit">Unvote</button>
+                            </form>
                             <?php 
                         }else{
                             ?>
@@ -91,15 +107,20 @@ if($_SESSION['status']==1){
             </div>
             <div class="col-md-5">
                 <!-- voters -->
-                <img src="../uploads/<?php echo $data['photo']?>" alt="Voter image">
+                <?php if(!empty($data['photo']) && file_exists("../uploads/".$data['photo'])) { ?>
+                    <img src="../uploads/<?php echo $data['photo'] ?>" alt="Voter image" class="img-fluid" style="max-width: 150px;">
+                <?php } else { ?>
+                    <img src="../uploads/default.png" alt="Default image" class="img-fluid" style="max-width: 150px;">
+                <?php } ?>
                 <br>
                 <br>
                 <strong class="text-dark h5">Name:</strong>
                 <?php echo $data['username'];?> <br><br>
-                <strong class="text-dark h5">Mobile:</strong>
-                <?php echo $data['mobile'];?><br><br>
+                <strong class="text-dark h5">Role:</strong>
+                <?php echo $data['standard'];?> <br><br>
                 <strong class="text-dark h5">Status:</strong>
-                <?php echo $status;?><br><br>   
+                <?php echo $status;?><br><br>
+                <a href="edit_profile.php" class="btn btn-primary">Edit Profile</a><br><br>
             </div>
         </div>
     </div>

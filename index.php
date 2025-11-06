@@ -8,7 +8,23 @@
     <!-- bootstrap link -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" 
     integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
+    <style>
+        .password-container {
+            position: relative;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 27%;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #6c757d;
+        }
+    </style>
 </head>
 <body class="bg-dark">
     <h1 class= "text-info text-center p-3">Voting System</h1>
@@ -17,16 +33,13 @@
         <div class="container text-center"> 
             <form action="./actions/login.php" method="POST">
                 <div class="mb-3">
-                    <input type="text" class="form-control w-50 m-auto" name="username" placeholder="Enter your usermame"
+                    <input type="text" class="form-control w-50 m-auto" name="username" placeholder="Enter your username"
                     required="required">
                 </div>
-                <div class="mb-3">
-                    <input type="text" class="form-control w-50 m-auto" name="mobile" placeholder="Enter your mobile number"
-                    required="required" maxlength="10" minlength="10">
-                </div>
-                <div class="mb-3">
-                    <input type="password" class="form-control w-50 m-auto" name="password" placeholder="Enter your password"
+                <div class="mb-3 password-container">
+                    <input type="password" class="form-control w-50 m-auto" id="login-password" name="password" placeholder="Enter your password"
                     required="required">
+                    <i class="fas fa-eye password-toggle" id="login-password-icon" onclick="togglePassword('login-password')"></i>
                 </div>
                 <div class="mb-3">
                     <select name="std" class="form-select w-50 m-auto">
@@ -39,5 +52,7 @@
             </form>
         </div>
     </div>
+    <!-- JavaScript for password toggle -->
+    <script src="./javascripts/password-toggle.js"></script>
 </body>
 </html>

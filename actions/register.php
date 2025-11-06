@@ -1,25 +1,47 @@
 <?php
 include('connect.php');
 if(isset($_POST['Registerme'])){
-$username=$_POST['username'];
-$mobile=$_POST['mobile'];
-$password=$_POST['password'];
-$cpassword=$_POST['cpassword'];
-$image=$_FILES['photo']['name'];
-$tmp_name=$_FILES['photo']['tmp_name'];
-$std=$_POST['std'];
+    $username=$_POST['username'];
+    $password=$_POST['password'];
+    $cpassword=$_POST['cpassword'];
+    $std=$_POST['std'];
 
-//line 16
+    // Initialize photo name as empty
+    $image = '';
 
-if($password!=$cpassword){
-    echo '<script>
-    alert("Passwords do not match ");                    
-    window.location="../Partials/registration.php";         
-    </script>';
-}else{
-    move_uploaded_file($tmp_name,"../uploads/$image");
-    $sql="insert into `userdata`(username,mobile,password,photo,
-    standard,status,votes) values ('$username','$mobile','$password','$image','$std',0,0)";
+    // Check if a file was uploaded
+    if(isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+        $tmp_name = $_FILES['photo']['tmp_name'];
+        $image = $_FILES['photo']['name'];
+        
+        // Generate unique name to prevent overwriting
+        $image_ext = pathinfo($image, PATHINFO_EXTENSION);
+        $image = uniqid() . '.' . $image_ext;
+        
+        // Create uploads directory if it doesn't exist
+        $upload_dir = "../uploads";
+        if (!file_exists($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+        
+        // Try to move the uploaded file
+        if(!move_uploaded_file($tmp_name, "$upload_dir/$image")) {
+            echo '<script>
+            alert("Error uploading image. Please try again.");
+            window.location="../Partials/registration.php";
+            </script>';
+            exit();
+        }
+    }
+
+    if($password!=$cpassword){
+        echo '<script>
+        alert("Passwords do not match");
+        window.location="../Partials/registration.php";
+        </script>';
+    } else {
+        $sql="insert into `userdata`(username,password,photo,
+        standard,status,votes) values ('$username','$password','$image','$std',0,0)";
 
     $result=mysqli_query($conn,$sql);
 

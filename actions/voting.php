@@ -3,17 +3,28 @@
 session_start();
 include ('connect.php');
 
-$votes=$_POST['candidatevotes'];
-$totalvotes=$votes+1;
+$votes = $_POST['candidatevotes'];
+$gid = $_POST['candidateid'];
+$uid = $_SESSION['id'];
 
-$gid=$_POST['candidateid'];
-$uid=$_SESSION['id'];
+// First check if the user has already voted
+$checkvote = mysqli_query($conn, "SELECT * FROM `votes` WHERE voter_id = '$uid'");
 
-$updatevotes=mysqli_query($conn,"update `userdata` set votes ='$totalvotes'
-where id= '$gid'");
+if(mysqli_num_rows($checkvote) > 0) {
+    echo '<script>
+    alert("You have already voted!");
+    window.location="../partials/dashboard.php";
+    </script>';
+    exit();
+}
 
-$updatestatus=mysqli_query($conn,"update `userdata` set status=1 where id =
-'$uid'");
+// If user hasn't voted yet, proceed with voting
+$totalvotes = $votes + 1;
+
+// Add vote record to votes table
+$addvote = mysqli_query($conn, "INSERT INTO `votes` (voter_id, candidate_id) VALUES ('$uid', '$gid')");
+$updatevotes = mysqli_query($conn, "UPDATE `userdata` SET votes = '$totalvotes' WHERE id = '$gid'");
+$updatestatus = mysqli_query($conn, "UPDATE `userdata` SET status = 1 WHERE id = '$uid'");
 
 if($updatevotes and $updatestatus) {
     $getcandidates=mysqli_query($conn,"select username ,photo,votes, id from `userdata`
