@@ -1,16 +1,28 @@
 <?php
-
 session_start();
-include('../actions/connect.php');
-if(!isset($_SESSION['id'])){
-    header('location:../');
+require_once('../actions/common/db_connect.php');
+require_once('../actions/common/utils.php');
+
+if (!isset($_SESSION['voter_id'])) {
+    header('location:../voter_login.php');
+    exit;
 }
-$data=$_SESSION['data'];
-if($_SESSION['status']==1){
-    $status='<b class="text-success">Voted</b>';
-}else{
-    $status='<b class="text-danger">Not Voted</b>';
-}
+
+$voter_id = $_SESSION['voter_id'];
+
+// Get voter data
+$stmt = $conn->prepare("SELECT * FROM voters WHERE id = ?");
+$stmt->bind_param("i", $voter_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$voter = $result->fetch_assoc();
+
+// Check if voted
+$stmt = $conn->prepare("SELECT * FROM votes WHERE voter_id = ?");
+$stmt->bind_param("i", $voter_id);
+$stmt->execute();
+$voted = $stmt->get_result();
+$status = $voted->num_rows > 0 ? '<b class="text-success">Voted</b>' : '<b class="text-danger">Not Voted</b>';
 
 
 ?>
@@ -40,60 +52,64 @@ if($_SESSION['status']==1){
         <div class="row my-5">
             <div class="col-md-7">
                 <?php 
-                if(isset($_SESSION['candidates'])){
-                    $candidates=$_SESSION['candidates'];
-                    for($i=0;$i<count($candidates);$i++){
+                // Get all candidates
+                $stmt = $conn->prepare("SELECT c.*, COUNT(v.id) as vote_count 
+                                      FROM candidates c 
+                                      LEFT JOIN votes v ON c.id = v.candidate_id 
+                                      WHERE c.status = 'approved'
+                                      GROUP BY c.id");
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if($result->num_rows > 0){
+                    while($candidate = $result->fetch_assoc()){
                         ?>
                         <div class="row">
-                        <div class="col-md-4">
-                            <?php if(!empty($candidates[$i]['photo']) && file_exists("../uploads/".$candidates[$i]['photo'])) { ?>
-                                <img src="../uploads/<?php echo $candidates[$i]['photo'] ?>" alt="Candidate image" class="img-fluid" style="max-width: 150px;">
-                            <?php } else { ?>
-                                <img src="../uploads/default.png" alt="Default image" class="img-fluid" style="max-width: 150px;">
-                            <?php } ?>
+                            <div class="col-md-4">
+                                <?php if(!empty($candidate['photo']) && file_exists("../uploads/candidate_photos/".$candidate['photo'])) { ?>
+                                    <img src="../uploads/candidate_photos/<?php echo $candidate['photo'] ?>" alt="Candidate image" class="img-fluid" style="max-width: 150px;">
+                                <?php } else { ?>
+                                    <img src="../uploads/default.png" alt="Default image" class="img-fluid" style="max-width: 150px;">
+                                <?php } ?>
+                            </div>
+                            <div class="col-md-8">
+                                <strong class="text-dark h5">Candidate name:</strong>
+                                <?php echo htmlspecialchars($candidate['name']) ?>
+                                <br>
+                                <strong class="text-dark h5">Votes:</strong>
+                                <?php echo $candidate['vote_count'] ?><br>
+                            </div>
                         </div>
-                        <div class="col-md-8">
-                            <strong class="text-dark h5">Candidate name:</strong>
-                            <?php echo $candidates[$i]['username'] ?>
-                            <br>
-                            <strong class="text-dark h5">Votes:</strong>
-                            <?php echo $candidates[$i]['votes'] ?><br>
-                        </div>
-                    </div>
-                
-                <form action="../actions/voting.php" method="post">
-                    <input type="hidden" name="candidatevotes" value="<?php echo $candidates[$i]['votes'] ?>">
-                    <input type="hidden" name="candidateid" value="<?php echo $candidates[$i]['id'] ?>">
-                        
-                    <?php 
-                        $uid = $_SESSION['id'];
-                        $cid = $candidates[$i]['id'];
-                        $voted = mysqli_query($conn, "SELECT * FROM `votes` WHERE voter_id = '$uid' AND candidate_id = '$cid'");
-                        
-                        if(mysqli_num_rows($voted) > 0){
-                            ?>
-                            <button class="bg-success my-3 text-white px-3" disabled>Voted</button>
-                            </form>
-                            <!-- Add unvote form -->
-                            <form action="../actions/unvote.php" method="post">
-                                <input type="hidden" name="candidatevotes" value="<?php echo $candidates[$i]['votes'] ?>">
-                                <input type="hidden" name="candidateid" value="<?php echo $candidates[$i]['id'] ?>">
-                                <button class="bg-warning my-1 text-white px-3" type="submit">Unvote</button>
-                            </form>
-                            <?php 
-                        }else{
-                            ?>
-                            <button class="bg-danger my-3 text-white px-3" type="submit">Vote</button>
-                            <?php 
-                        }
-                    ?>    
-
-                </form>
-                <hr>
-                <?php
                     
-                   }
-                }else{
+                        <form action="../actions/voter/vote.php" method="post" id="voteForm<?php echo $candidate['id']; ?>">
+                            <input type="hidden" name="candidate_id" value="<?php echo $candidate['id'] ?>">
+                            
+                            <?php 
+                            $stmt2 = $conn->prepare("SELECT * FROM votes WHERE voter_id = ? AND candidate_id = ?");
+                            $stmt2->bind_param("ii", $voter_id, $candidate['id']);
+                            $stmt2->execute();
+                            $voted_result = $stmt2->get_result();
+                            
+                            if($voted_result->num_rows > 0){
+                                ?>
+                                <button class="bg-success my-3 text-white px-3" disabled>Voted</button>
+                                </form>
+                                <form action="../actions/voter/unvote.php" method="post">
+                                    <input type="hidden" name="candidate_id" value="<?php echo $candidate['id'] ?>">
+                                    <button class="bg-warning my-1 text-white px-3" type="submit">Unvote</button>
+                                </form>
+                                <?php 
+                            } else {
+                                ?>
+                                <button class="bg-danger my-3 text-white px-3" type="submit">Vote</button>
+                                <?php 
+                            }
+                            ?>    
+                        </form>
+                        <hr>
+                        <?php
+                    }
+                } else {
                     ?>
                     <div class="container">
                         <p>No Candidates to display</p>
@@ -107,20 +123,21 @@ if($_SESSION['status']==1){
             </div>
             <div class="col-md-5">
                 <!-- voters -->
-                <?php if(!empty($data['photo']) && file_exists("../uploads/".$data['photo'])) { ?>
-                    <img src="../uploads/<?php echo $data['photo'] ?>" alt="Voter image" class="img-fluid" style="max-width: 150px;">
+                <?php if(!empty($voter['photo']) && file_exists("../uploads/voter_photos/".$voter['photo'])) { ?>
+                    <img src="../uploads/voter_photos/<?php echo $voter['photo'] ?>" alt="Voter image" class="img-fluid" style="max-width: 150px;">
                 <?php } else { ?>
                     <img src="../uploads/default.png" alt="Default image" class="img-fluid" style="max-width: 150px;">
                 <?php } ?>
                 <br>
                 <br>
                 <strong class="text-dark h5">Name:</strong>
-                <?php echo $data['username'];?> <br><br>
-                <strong class="text-dark h5">Role:</strong>
-                <?php echo $data['standard'];?> <br><br>
+                <?php echo htmlspecialchars($voter['name']);?> <br><br>
+                <strong class="text-dark h5">Aadhar:</strong>
+                <?php echo substr($voter['aadhar'], 0, 4) . '****' . substr($voter['aadhar'], -4);?> <br><br>
                 <strong class="text-dark h5">Status:</strong>
                 <?php echo $status;?><br><br>
-                <a href="edit_profile.php" class="btn btn-primary">Edit Profile</a><br><br>
+                <a href="edit_profile.php" class="btn btn-primary">Edit Profile</a>
+                <a href="../actions/voter/logout.php" class="btn btn-danger">Logout</a><br><br>
             </div>
         </div>
     </div>

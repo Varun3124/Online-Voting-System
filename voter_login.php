@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Voting System - Voter Login</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-dark">
+    <h1 class="text-info text-center p-3">Online Voting System</h1>
+    <div class="bg-info py-4">
+        <h2 class="text-center">Voter Login</h2>
+        <div class="container text-center"> 
+            <form action="./actions/voter/login.php" method="POST" id="voterLoginForm">
+                <div class="mb-3">
+                    <input type="text" class="form-control w-50 m-auto" name="aadhar" 
+                           placeholder="Enter Aadhar Number" required="required"
+                           pattern="\d{12}" title="Please enter valid 12-digit Aadhar number">
+                </div>
+                <div class="mb-3 password-container">
+                    <input type="password" class="form-control w-50 m-auto" id="voter-password" 
+                           name="password" placeholder="Enter password" required="required">
+                    <i class="fas fa-eye password-toggle" onclick="togglePassword('voter-password')"></i>
+                </div>
+
+                <button type="submit" class="btn btn-dark my-4">Login</button>
+                <p>Don't have an account? <a href="./voter_register.php" class="text-white">Register here</a></p>
+                <p><a href="./admin_login.php" class="text-white">Go to Admin Login</a></p>
+            </form>
+        </div>
+    </div>
+    <script src="./javascripts/password-toggle.js"></script>
+    <script>
+    document.getElementById('voterLoginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Login with Aadhar and password
+        fetch(this.action, {
+            method: 'POST',
+            body: new FormData(this)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status === 'success') {
+                window.location.href = './voter/dashboard.php';
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred during login');
+        });
+    });
+    </script>
+</body>
+</html>

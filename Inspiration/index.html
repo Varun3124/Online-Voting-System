@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>eVote — Online Voting Prototype</title>
+
+  <!-- Fonts & icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js" defer></script>
+
+  <!-- local styles + script -->
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="header" role="banner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"><i class="fa-solid fa-vote-yea"></i></div>
+        <div class="title">
+          <h1 id="app-title">eVote — Online Voting Prototype</h1>
+          <p id="app-sub">voter + admin demo — frontend only</p>
+        </div>
+      </div>
+
+      <div class="controls" role="navigation" aria-label="top controls">
+        <div class="lang-select" id="lang-select">
+          <label for="lang" class="sr-only">Language</label>
+          <select id="lang" aria-label="language">
+            <option value="en">English</option>
+            <option value="hi">हिन्दी</option>
+            <option value="gu">ગુજરાતી</option>
+          </select>
+        </div>
+
+        <button id="mode-toggle" class="mode-btn" aria-pressed="false" title="Toggle mode">
+          <i class="fa-solid fa-user-shield" aria-hidden="true"></i>
+          <span id="mode-label">Voter</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="page-grid" role="main">
+      <!-- LEFT column (content) -->
+      <section class="left-col">
+
+        <!-- VOTER LOGIN -->
+        <div id="voter-login" class="card view active" role="region" aria-labelledby="voter-heading">
+          <h2 id="voter-heading">Voter Verification</h2>
+          <p class="hint" id="voter-hint">Enter Aadhaar, DOB and receive OTP to verify. (Demo OTP appears in admin log)</p>
+
+          <form id="login-form" class="form" autocomplete="off" novalidate>
+            <label class="label">Aadhaar (12 digits)
+              <input id="v-aadhaar" name="aadhaar" inputmode="numeric" pattern="\d{12}" maxlength="12" required aria-required="true" />
+            </label>
+
+            <label class="label">Date of birth
+              <input id="v-dob" name="dob" type="date" required aria-required="true" />
+            </label>
+
+            <div class="row">
+              <label class="label small">Contact method
+                <select id="v-contact-type" aria-label="contact type">
+                  <option value="phone">Phone</option>
+                  <option value="email">Email</option>
+                </select>
+              </label>
+              <label class="label">Phone / Email
+                <input id="v-contact" name="contact" placeholder="Phone or email for OTP (demo)" />
+              </label>
+            </div>
+
+            <div class="row actions">
+              <button id="send-otp" type="button" class="btn primary"><i class="fa-solid fa-paper-plane"></i> <span id="send-otp-label">Send OTP</span></button>
+              <button id="clear-login" type="button" class="btn ghost">Clear</button>
+              <div class="hint small" style="margin-left:auto">Demo OTP: check admin log</div>
+            </div>
+
+            <div id="otp-area" class="otp-area" aria-live="polite" hidden>
+              <label class="label">Enter OTP
+                <input id="v-otp" inputmode="numeric" maxlength="6" />
+              </label>
+              <div class="row actions">
+                <button id="verify-otp" class="btn primary" type="button"><i class="fa-solid fa-check"></i> Verify & Continue</button>
+                <button id="resend-otp" class="btn ghost" type="button">Resend</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- BALLOT -->
+        <div id="ballot" class="card view" role="region" aria-labelledby="ballot-heading" hidden>
+          <h2 id="ballot-heading">Ballot — Choose Your Candidate</h2>
+          <p class="hint">Select a candidate (or multiple if configured) and cast your vote. You can vote only once per election.</p>
+
+          <div class="meta">
+            <div><strong id="election-title">Election</strong></div>
+            <div class="kv" id="voter-meta">Voter: <span id="voter-name">—</span> • Aadhaar: <span id="voter-aad">—</span></div>
+          </div>
+
+          <form id="ballot-form" class="ballot-form" novalidate>
+            <div id="candidates" class="candidates" role="list" aria-label="candidates list"></div>
+
+            <div class="row actions">
+              <button id="cast-vote" class="btn primary" type="button"><i class="fa-solid fa-vote-yea"></i> Cast Vote</button>
+              <button id="back-to-login" class="btn ghost" type="button">Back</button>
+              <div style="margin-left:auto" class="kv">Casting confirms your final choice in this demo</div>
+            </div>
+          </form>
+        </div>
+
+        <!-- CONFIRM -->
+        <div id="confirmation" class="card view" role="region" aria-labelledby="confirm-heading" hidden>
+          <h2 id="confirm-heading">Thanks — Vote Recorded</h2>
+          <p class="hint">Your vote has been recorded in this demo.</p>
+          <div class="center">
+            <button id="finish" class="btn primary"><i class="fa-solid fa-check-circle"></i> Finish</button>
+            <button id="view-receipt" class="btn ghost" style="margin-left:12px">View Receipt</button>
+          </div>
+        </div>
+
+        <!-- ADMIN PANEL -->
+        <div id="admin-panel" class="card view" role="region" aria-labelledby="admin-heading" hidden>
+          <h2 id="admin-heading">Admin Control Panel</h2>
+          <p class="hint">Create elections, add candidates, import voters, start/stop, monitor turnout. (Demo only)</p>
+
+          <section class="admin-block">
+            <h3>Create Election</h3>
+            <div class="row">
+              <input id="e-name" placeholder="Election title (e.g. Lok Sabha 2025 — X)" />
+              <input id="e-const" placeholder="Constituency (optional)" />
+            </div>
+            <div class="row">
+              <label class="kv">Start <input id="e-start" type="datetime-local"></label>
+              <label class="kv">End <input id="e-end" type="datetime-local"></label>
+            </div>
+            <div class="row actions">
+              <button id="create-election" class="btn primary">Create Election</button>
+              <button id="load-sample" class="btn ghost">Load Sample</button>
+            </div>
+          </section>
+
+          <section class="admin-block">
+            <h3>Candidates</h3>
+            <div class="row">
+              <input id="c-name" placeholder="Candidate name" />
+              <input id="c-party" placeholder="Party name" />
+            </div>
+            <div class="row">
+              <label class="kv">Symbol <input id="c-symbol" type="file" accept="image/*"></label>
+              <label class="kv">Seats
+                <select id="e-seats">
+                  <option value="1">Single-seat</option>
+                  <option value="2">2 seats</option>
+                  <option value="3">3 seats</option>
+                </select>
+              </label>
+            </div>
+            <div class="row actions">
+              <button id="add-candidate" class="btn primary">Add Candidate</button>
+              <button id="clear-candidate" class="btn ghost">Clear</button>
+            </div>
+            <div style="margin-top:10px">
+              <table class="table" aria-label="candidates table">
+                <thead><tr><th>Candidate</th><th>Party</th><th></th></tr></thead>
+                <tbody id="c-table"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="admin-block">
+            <h3>Voter Roll</h3>
+            <div class="kv">Upload CSV (aadhaar,name,phone,email,lang) or JSON (array)</div>
+            <div class="row">
+              <input id="v-roll-file" type="file" accept=".csv,.json">
+              <button id="import-roll" class="btn primary">Import</button>
+              <button id="clear-roll" class="btn ghost">Clear roll</button>
+            </div>
+            <div style="max-height:160px;overflow:auto;margin-top:8px">
+              <table class="table"><thead><tr><th>Aadhaar</th><th>Name</th></tr></thead><tbody id="v-table"></tbody></table>
+            </div>
+          </section>
+
+          <section class="admin-block">
+            <h3>Election Controls & Stats</h3>
+            <div class="row">
+              <select id="select-election"></select>
+              <button id="start-election" class="btn primary">Start</button>
+              <button id="stop-election" class="btn ghost">Stop</button>
+            </div>
+
+            <div class="stat-row" aria-hidden="false">
+              <div class="stat">
+                <h2 id="stat-voted">0</h2><div class="kv">Votes cast</div>
+              </div>
+              <div class="stat">
+                <h2 id="stat-eligible">0</h2><div class="kv">Eligible voters</div>
+              </div>
+              <div class="stat">
+                <h2 id="stat-turnout">0%</h2><div class="kv">Turnout</div>
+              </div>
+            </div>
+
+            <div style="margin-top:10px"><canvas id="results-chart" aria-label="results chart" role="img"></canvas></div>
+
+            <div style="margin-top:12px">
+              <button id="export-data" class="btn">Export Data</button>
+              <button id="reset-all" class="btn ghost">Reset Demo</button>
+            </div>
+
+            <div style="margin-top:12px">
+              <h4>Admin log</h4>
+              <div id="admin-log" class="admin-log" aria-live="polite"></div>
+            </div>
+          </section>
+        </div>
+
+      </section>
+
+      <!-- RIGHT column (widgets) -->
+      <aside class="right-col">
+        <div class="card">
+          <h3 id="widget-election">Active Election</h3>
+          <div id="widget-body" class="kv">No active election</div>
+        </div>
+
+        <div class="card">
+          <h3>Quick actions</h3>
+          <div class="row">
+            <button id="open-voter" class="btn">Voter View</button>
+            <button id="open-admin" class="btn ghost">Admin View</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Accessibility + Info</h3>
+          <ol class="kv">
+            <li>Front-end demo only — OTP & Aadhaar are simulated.</li>
+            <li>For production: server-side verification, cryptographic audit trail, and secure OTP gateway required.</li>
+            <li>Multi-lingual UI and multi-seat ballots supported in demo.</li>
+          </ol>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- Receipt modal -->
+  <div id="modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="receipt-title">
+      <h3 id="receipt-title">Vote Receipt (demo)</h3>
+      <div id="receipt-body" class="kv"></div>
+      <div style="text-align:right;margin-top:12px">
+        <button id="close-receipt" class="btn">Close</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

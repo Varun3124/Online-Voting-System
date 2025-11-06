@@ -29,27 +29,35 @@
 <body class="bg-dark">
     <h1 class= "text-info text-center p-3">Voting System</h1>
     <div class="bg-info py-4">
-        <h2 class="text-center">Login</h2>
-        <div class="container text-center"> 
-            <form action="./actions/login.php" method="POST">
-                <div class="mb-3">
-                    <input type="text" class="form-control w-50 m-auto" name="username" placeholder="Enter your username"
-                    required="required">
+        <h2 class="text-center">Welcome to Online Voting System</h2>
+        <div class="container text-center">
+            <p class="text-white">
+                <a href="./public/results.php" class="btn btn-light">
+                    <i class="fas fa-chart-bar"></i> View Election Results
+                </a>
+            </p>
+            <div class="row justify-content-center mt-3">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h3>Voter Login</h3>
+                            <p>Login to cast your vote</p>
+                            <a href="./voter_login.php" class="btn btn-dark">Voter Login</a>
+                            <hr>
+                            <p>New voter? <a href="./voter_register.php">Register here</a></p>
+                        </div>
+                    </div>
                 </div>
-                <div class="mb-3 password-container">
-                    <input type="password" class="form-control w-50 m-auto" id="login-password" name="password" placeholder="Enter your password"
-                    required="required">
-                    <i class="fas fa-eye password-toggle" id="login-password-icon" onclick="togglePassword('login-password')"></i>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h3>Admin Login</h3>
+                            <p>Login to manage elections</p>
+                            <a href="./admin_login.php" class="btn btn-dark">Admin Login</a>
+                        </div>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <select name="std" class="form-select w-50 m-auto">
-                        <option value="Candidate">Candidate</option>
-                        <option value="Voter">Voter</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-dark my-4">Login</button>
-                <p>Don't have an account? <a href="./Partials/registration.php" class="text-white"> Register here</a></p>
-            </form>
+            </div>
         </div>
     </div>
     <!-- JavaScript for password toggle -->

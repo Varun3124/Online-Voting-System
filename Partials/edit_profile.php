@@ -1,11 +1,19 @@
 <?php
 session_start();
-include('../actions/connect.php');
+require_once('../actions/common/db_connect.php');
+require_once('../actions/common/utils.php');
 
-if(!isset($_SESSION['id'])){
-    header('location:../');
+if(!isset($_SESSION['voter_id'])){
+    header('location:../voter_login.php');
+    exit;
 }
-$data = $_SESSION['data'];
+
+$voter_id = $_SESSION['voter_id'];
+$stmt = $conn->prepare("SELECT * FROM voters WHERE id = ?");
+$stmt->bind_param("i", $voter_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$voter = $result->fetch_assoc();
 ?>
 
 <!DOCTYPE html>
@@ -47,17 +55,37 @@ $data = $_SESSION['data'];
         <div class="row">
             <div class="col-md-6">
                 <!-- General Information Form -->
-                <form action="../actions/update_profile.php" method="POST" enctype="multipart/form-data">
+                <form action="../actions/voter/update_profile.php" method="POST" enctype="multipart/form-data">
                     <h4 class="mb-4">General Information</h4>
                     <div class="mb-3">
-                        <label class="form-label">Username</label>
-                        <input type="text" class="form-control" name="username" value="<?php echo $data['username']; ?>" required>
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" name="name" value="<?php echo htmlspecialchars($voter['name']); ?>" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Aadhar Number</label>
+                        <input type="text" class="form-control" value="<?php echo substr($voter['aadhar'], 0, 4) . '****' . substr($voter['aadhar'], -4); ?>" disabled>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" class="form-control" name="dob" value="<?php echo $voter['dob']; ?>" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" name="phone" value="<?php echo htmlspecialchars($voter['phone']); ?>" pattern="\d{10}" title="Please enter valid 10-digit mobile number">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email" value="<?php echo htmlspecialchars($voter['email']); ?>">
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Current Photo</label><br>
-                        <?php if(!empty($data['photo']) && file_exists("../uploads/".$data['photo'])) { ?>
-                            <img src="../uploads/<?php echo $data['photo'] ?>" alt="Current photo" class="img-fluid" style="max-width: 150px;">
+                        <?php if(!empty($voter['photo']) && file_exists("../uploads/voter_photos/".$voter['photo'])) { ?>
+                            <img src="../uploads/voter_photos/<?php echo $voter['photo'] ?>" alt="Current photo" class="img-fluid" style="max-width: 150px;">
                         <?php } else { ?>
                             <img src="../uploads/default.png" alt="Default image" class="img-fluid" style="max-width: 150px;">
                         <?php } ?>
@@ -65,22 +93,14 @@ $data = $_SESSION['data'];
 
                     <div class="mb-3">
                         <label class="form-label">New Photo (leave blank to keep current)</label>
-                        <input type="file" class="form-control" name="new_photo">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Role</label>
-                        <select name="standard" class="form-control">
-                            <option value="Voter" <?php if($data['standard'] == 'Voter') echo 'selected'; ?>>Voter</option>
-                            <option value="Candidate" <?php if($data['standard'] == 'Candidate') echo 'selected'; ?>>Candidate</option>
-                        </select>
+                        <input type="file" class="form-control" name="new_photo" accept="image/*">
                     </div>
 
                     <button type="submit" name="update_general" class="btn btn-primary mb-4">Update Profile</button>
                 </form>
 
                 <!-- Password Change Form -->
-                <form action="../actions/update_profile.php" method="POST">
+                <form action="../actions/voter/update_password.php" method="POST" id="passwordForm">
                     <h4 class="mb-4 mt-5">Change Password</h4>
                     <div class="mb-3 password-container">
                         <label class="form-label">New Password</label>
@@ -100,8 +120,24 @@ $data = $_SESSION['data'];
                         <i class="fas fa-eye password-toggle" id="current-password-icon" onclick="togglePassword('current-password')"></i>
                     </div>
 
-                    <button type="submit" name="update_password" class="btn btn-primary">Change Password</button>
+                    <button type="submit" class="btn btn-primary">Change Password</button>
                 </form>
+
+                <script>
+                document.getElementById('passwordForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const newPass = document.getElementById('new-password').value;
+                    const confirmPass = document.getElementById('confirm-password').value;
+                    
+                    if (newPass !== confirmPass) {
+                        alert('New passwords do not match!');
+                        return;
+                    }
+                    
+                    this.submit();
+                });
+                </script>
                 <!-- JavaScript for password toggle -->
                 <script src="../javascripts/password-toggle.js"></script>
             </div>
